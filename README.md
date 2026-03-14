@@ -1,31 +1,19 @@
 # agent-data-hub
 
-`agent-data-hub` is the source workspace repository paired with `agent-data-cli`.
+[English](./README_en.md) | [中文](./README.md)
 
-It is the repository that holds:
+`agent-data-hub` 是 `agent-data-cli` 的伴生 source 仓库。
 
-- official source implementations
-- source-specific tests
-- the workspace-wide `sources.json` index consumed by the built-in `data_hub` source from `agent-data-cli`
+它负责提供：
 
-The core repository stays focused on protocol, CLI, store, discovery, and shared fetch infrastructure.
+- 我已经整理好的官方 source 实现
+- 仓库根的 `sources.json` 索引文件，供 `agent-data-cli` 内置的 `data_hub` source 读取
 
-This repository is expected to contain one source package per direct child directory, for example:
+`agent-data-cli` 负责协议、CLI、store、discovery 等 core；`agent-data-hub` 负责 source 本身。
 
-```text
-ashare/
-bbc/
-cryptocompare/
-rsshub/
-xiaohongshu/
-sources.json
-```
+## 连接到 agent-data-cli
 
-Each source package should keep its own runtime dependencies and optional `init.sh`.
-
-## Connect It To `agent-data-cli`
-
-In the core repo:
+在 `agent-data-cli` 仓库里，把 `source_workspace` 指到这个仓库：
 
 ```bash
 uv run -m adc config cli set source_workspace /abs/path/to/agent-data-hub
@@ -33,19 +21,46 @@ uv run -m adc source list
 uv run -m adc content search --source data_hub --channel official --query xiaohongshu
 ```
 
-Do not install source runtime dependencies into the `agent-data-cli` core project with `uv add`.
-Use source-local installation patterns instead:
+`data_hub` 是 core 内置的轻量 source，它会从这里的 `sources.json` 读取官方 source 索引。
+
+## 当前整理好的 Source
+
+| Source | Channel Search | Content Search | Update | Query | Interact |
+| --- | --- | --- | --- | --- | --- |
+| `ashare` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `bbc` | ❌ | ✅ | ✅ | ✅ | ❌ |
+| `cryptocompare` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `hackernews` | ❌ | ✅ | ✅ | ✅ | ❌ |
+| `rsshub` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `sina_finance_724` | ❌ | ❌ | ✅ | ✅ | ❌ |
+| `usstock` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `wechatarticle` | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `xiaohongshu` | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+## 仓库结构
+
+```text
+ashare/
+bbc/
+cryptocompare/
+hackernews/
+rsshub/
+sina_finance_724/
+usstock/
+wechatarticle/
+xiaohongshu/
+sources.json
+```
+
+每个 source 自己维护自己的 runtime 依赖和可选 `init.sh`。
+
+不要把 source 依赖装进 `agent-data-cli` 的 core manifest 里，不要在 core 仓库执行 `uv add`。
+
+推荐的 source 本地安装方式：
 
 ```bash
 uv pip install -p /abs/path/to/agent-data-cli/.venv/bin/python -r /abs/path/to/source/requirements.txt
 bash /abs/path/to/source/init.sh
 ```
 
-## Tests
-
-If `agent-data-hub` is nested next to `agent-data-cli` during development, run:
-
-```bash
-cd /abs/path/to/agent-data-hub
-../.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
-```
+本仓库默认不跟踪测试目录；本地开发时如需保留测试，可自行在工作区维护。
