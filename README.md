@@ -6,7 +6,7 @@ It is the repository that holds:
 
 - official source implementations
 - source-specific tests
-- the `data_hub` source catalog and install entrypoint
+- the workspace-wide `sources.json` index consumed by the built-in `data_hub` source from `agent-data-cli`
 
 The core repository stays focused on protocol, CLI, store, discovery, and shared fetch infrastructure.
 
@@ -16,9 +16,9 @@ This repository is expected to contain one source package per direct child direc
 ashare/
 bbc/
 cryptocompare/
-data_hub/
 rsshub/
 xiaohongshu/
+sources.json
 ```
 
 Each source package should keep its own runtime dependencies and optional `init.sh`.

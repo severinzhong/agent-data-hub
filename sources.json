@@ -1,0 +1,110 @@
+[
+  {
+    "source_name": "ashare",
+    "display_name": "A Share",
+    "summary": "A-share symbols and day-level market data",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "ashare",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["channel.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "bbc",
+    "display_name": "BBC",
+    "summary": "BBC channels, search, and article sync",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "bbc",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["content.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "cryptocompare",
+    "display_name": "CryptoCompare",
+    "summary": "Cryptocurrency channels and day-level candles",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "cryptocompare",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["channel.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "hackernews",
+    "display_name": "Hacker News",
+    "summary": "Hacker News remote search and sync",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "hackernews",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["content.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "rsshub",
+    "display_name": "RSSHub",
+    "summary": "RSSHub routes as channels",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "rsshub",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["channel.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "sina_finance_724",
+    "display_name": "Sina Finance 7x24",
+    "summary": "7x24 finance bulletin sync",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "sina_finance_724",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["content.update", "content.query"]
+  },
+  {
+    "source_name": "usstock",
+    "display_name": "US Stock",
+    "summary": "US stock symbol discovery and day-level data",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "usstock",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["channel.search", "content.update", "content.query"]
+  },
+  {
+    "source_name": "wechatarticle",
+    "display_name": "WeChat Article",
+    "summary": "Sogou WeChat article search",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "wechatarticle",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": ["content.search"]
+  },
+  {
+    "source_name": "xiaohongshu",
+    "display_name": "Xiaohongshu",
+    "summary": "Xiaohongshu user channels, note search, sync, and interact",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "xiaohongshu",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "init.sh",
+    "capabilities": ["channel.search", "content.search", "content.update", "content.query", "content.interact"]
+  }
+]
