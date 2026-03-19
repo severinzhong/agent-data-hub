@@ -5,7 +5,8 @@ import random
 import time
 from typing import Any
 
-import httpx
+from fetchers.base import FetchResponse, RiskMarkers
+from fetchers.http import HttpFetcher
 
 from core.protocol import AuthRequiredError, RemoteExecutionError
 
@@ -25,24 +26,13 @@ class XiaohongshuClient:
         request_delay: float = 0.5,
         max_retries: int = 3,
         proxy_url: str | None = None,
+        fetcher: HttpFetcher | None = None,
     ) -> None:
         self.cookies = dict(cookies)
-        client_kwargs: dict[str, object] = {
-            "timeout": timeout,
-            "follow_redirects": True,
-        }
-        if proxy_url is None:
-            client_kwargs["trust_env"] = True
-        elif proxy_url == DIRECT_PROXY_VALUE:
-            client_kwargs["trust_env"] = False
-            client_kwargs["proxy"] = None
-        else:
-            client_kwargs["trust_env"] = False
-            client_kwargs["proxy"] = proxy_url
-        self._http = httpx.Client(**client_kwargs)
+        self._http = fetcher or HttpFetcher(proxy_url=proxy_url)
+        self._timeout = timeout
         self._request_delay = request_delay
         self._max_retries = max_retries
-        self._last_request_time = 0.0
 
     def close(self) -> None:
         self._http.close()
@@ -223,38 +213,29 @@ class XiaohongshuClient:
     def _cookie_header(self) -> str:
         return "; ".join(f"{key}={value}" for key, value in self.cookies.items())
 
-    def _request_with_retry(self, method: str, url: str, **kwargs) -> httpx.Response:
-        self._sleep_if_needed()
-        last_error: Exception | None = None
-        response: httpx.Response | None = None
-        for attempt in range(self._max_retries):
-            try:
-                response = self._http.request(method, url, **kwargs)
-                self._merge_response_cookies(response)
-                self._last_request_time = time.time()
-                if response.status_code in (429, 500, 502, 503, 504):
-                    wait_seconds = (2**attempt) + random.uniform(0, 1)
-                    time.sleep(wait_seconds)
-                    continue
-                return response
-            except (httpx.TimeoutException, httpx.NetworkError) as exc:
-                last_error = exc
-                wait_seconds = (2**attempt) + random.uniform(0, 1)
-                time.sleep(wait_seconds)
-        if last_error is not None:
-            raise RemoteExecutionError(f"xiaohongshu request failed: {last_error}") from last_error
-        if response is None:
-            raise RemoteExecutionError("xiaohongshu request failed before response")
-        raise RemoteExecutionError(f"xiaohongshu request failed: HTTP {response.status_code}")
+    def _request_with_retry(self, method: str, url: str, **kwargs) -> FetchResponse:
+        response = self._http.request(
+            method,
+            url,
+            policy=self._request_policy_name(method, url),
+            risk_markers=RiskMarkers(
+                status_codes=(461, 471),
+                header_keys=("verifytype", "verifyuuid"),
+            ),
+            **kwargs,
+        )
+        if response.cookies:
+            self.cookies.update(response.cookies)
+        return response
 
-    def _handle_response(self, response: httpx.Response) -> Any:
-        if response.status_code in (461, 471):
+    def _handle_response(self, response: FetchResponse) -> Any:
+        if response.risk_signal is not None:
             raise RemoteExecutionError(
                 f"xiaohongshu requires verification: type={response.headers.get('verifytype', 'unknown')}, "
                 f"uuid={response.headers.get('verifyuuid', 'unknown')}"
             )
 
-        text = response.text
+        text = response.text()
         if not text:
             return None
         try:
@@ -274,17 +255,22 @@ class XiaohongshuClient:
             raise RemoteExecutionError("xiaohongshu IP was blocked")
         raise RemoteExecutionError(f"xiaohongshu API error: {json.dumps(payload, ensure_ascii=False)[:300]}")
 
-    def _merge_response_cookies(self, response: httpx.Response) -> None:
-        for key, value in response.cookies.items():
-            if value:
-                self.cookies[key] = value
-
     def _search_id(self) -> str:
         return f"{int(time.time() * 1000)}{random.randint(1000, 9999)}"
 
-    def _sleep_if_needed(self) -> None:
-        if self._request_delay <= 0:
-            return
-        elapsed = time.time() - self._last_request_time
-        if elapsed < self._request_delay:
-            time.sleep(self._request_delay - elapsed)
+    def _request_policy_name(self, method: str, url: str) -> dict[str, object]:
+        if method == "GET" and "search" in url:
+            base = "search"
+        elif "note/" in url or "comment/" in url:
+            base = "interact"
+        else:
+            base = "update"
+        return {
+            "base": base,
+            "timeout_s": self._timeout,
+            "min_interval_ms": int(self._request_delay * 1000),
+            "jitter_ms": 500,
+            "max_retries": self._max_retries,
+            "backoff_ms": 1000,
+            "retry_statuses": (429, 500, 502, 503, 504),
+        }
