@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -153,8 +152,6 @@ class SinaFinance724Source(BaseSource):
         if since_date is None and not fetch_all and (limit or 0) > 0:
             page_size = min(page_size, limit or page_size)
         max_pages = self._config_int("max_pages", default=200, min_value=1)
-        request_interval_s = self._config_int("request_interval_ms", default=300, min_value=0) / 1000
-
         records: list[ContentRecord] = []
         seen_dedup_keys: set[str] = set()
         cursor_id = ""
@@ -204,8 +201,6 @@ class SinaFinance724Source(BaseSource):
             if not next_cursor or next_cursor == cursor_id:
                 break
             cursor_id = next_cursor
-            if request_interval_s > 0:
-                time.sleep(request_interval_s)
 
         if page_index >= max_pages:
             self._log_progress(channel_key, f"reached max_pages={max_pages}, stop pagination")
@@ -243,28 +238,23 @@ class SinaFinance724Source(BaseSource):
         )
 
     def _request_feed(self, channel_key: str, params: dict[str, str]) -> dict:
-        max_retries = self._config_int("request_max_retries", default=3, min_value=1)
-        backoff_ms = self._config_int("request_retry_backoff_ms", default=800, min_value=0)
+        _ = channel_key
         url = f"{SINA_FINANCE_724_API}?{urlencode(params)}"
-        for attempt in range(1, max_retries + 1):
-            try:
-                payload = self.http.get_json(url)
-                status = payload.get("result", {}).get("status", {})
-                code = int(status.get("code", -1))
-                if code != 0:
-                    raise RuntimeError(f"api status code={code}, msg={status.get('msg', '')}")
-                return payload
-            except Exception as exc:  # noqa: BLE001
-                if attempt >= max_retries:
-                    raise RuntimeError(f"sina_finance_724 request failed: {exc}") from exc
-                wait_seconds = backoff_ms * (2 ** (attempt - 1)) / 1000
-                self._log_progress(
-                    channel_key,
-                    f"retry attempt={attempt + 1}/{max_retries} wait={wait_seconds:.2f}s error={exc}",
-                )
-                if wait_seconds > 0:
-                    time.sleep(wait_seconds)
-        raise RuntimeError("sina_finance_724 request failed after retries")
+        payload = self.http.get_json(
+            url,
+            policy={
+                "base": "update",
+                "min_interval_ms": self._config_int("request_interval_ms", default=300, min_value=0),
+                "max_retries": self._config_int("request_max_retries", default=3, min_value=1),
+                "backoff_ms": self._config_int("request_retry_backoff_ms", default=800, min_value=0),
+                "retry_statuses": (429, 500, 502, 503, 504),
+            },
+        )
+        status = payload.get("result", {}).get("status", {})
+        code = int(status.get("code", -1))
+        if code != 0:
+            raise RuntimeError(f"api status code={code}, msg={status.get('msg', '')}")
+        return payload
 
     def _build_record(
         self,

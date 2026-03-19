@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import random
 import re
 import sys
-import time
 from datetime import UTC, datetime
 from html import unescape
 from urllib.parse import quote_plus, urljoin
@@ -133,8 +131,6 @@ class WechatArticleSource(BaseSource):
 
         results: list[SearchResult] = []
         for page in range(1, max_page + 1):
-            if page > 1:
-                self._sleep_between_pages()
             url = self._build_search_url(normalized_query, page)
             html_body = self._fetch_search_page_with_retry(url=url, query=normalized_query)
             stop_reason = self._detect_stop_reason(html_body=html_body, page=page, has_cookie=has_cookie)
@@ -242,34 +238,19 @@ class WechatArticleSource(BaseSource):
         return item.metadata.get(key, "")
 
     def _fetch_search_page_with_retry(self, *, url: str, query: str) -> str:
-        max_retries = self._config_int("request_max_retries", default=3, min_value=1)
-        backoff_ms = self._config_int("request_retry_backoff_ms", default=1200, min_value=0)
-        for attempt in range(max_retries):
-            try:
-                return self.http.get_text(
-                    url,
-                    headers=self._request_headers(),
-                )
-            except Exception as exc:
-                if attempt >= max_retries - 1:
-                    raise
-                wait_seconds = backoff_ms * (2**attempt) / 1000
-                self._log_progress(
-                    query,
-                    f"retry attempt={attempt + 2}/{max_retries} wait={wait_seconds:.2f}s error={exc}",
-                )
-                if wait_seconds > 0:
-                    time.sleep(wait_seconds)
-        raise RuntimeError("unreachable retry loop")
-
-    def _sleep_between_pages(self) -> None:
-        interval_ms = self._config_int("request_interval_ms", default=1200, min_value=0)
-        jitter_ms = self._config_int("request_jitter_ms", default=600, min_value=0)
-        delay_ms = float(interval_ms)
-        if jitter_ms > 0:
-            delay_ms += random.uniform(0, float(jitter_ms))
-        if delay_ms > 0:
-            time.sleep(delay_ms / 1000)
+        _ = query
+        return self.http.get_text(
+            url,
+            headers=self._request_headers(),
+            policy={
+                "base": "search",
+                "min_interval_ms": self._config_int("request_interval_ms", default=1200, min_value=0),
+                "jitter_ms": self._config_int("request_jitter_ms", default=600, min_value=0),
+                "max_retries": self._config_int("request_max_retries", default=3, min_value=1),
+                "backoff_ms": self._config_int("request_retry_backoff_ms", default=1200, min_value=0),
+                "retry_statuses": (429, 500, 502, 503, 504),
+            },
+        )
 
     def _detect_stop_reason(self, *, html_body: str, page: int, has_cookie: bool) -> str | None:
         if self._is_risk_control_page(html_body):
