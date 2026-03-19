@@ -19,7 +19,10 @@ from core.manifest import (
 )
 from core.models import (
     ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
     ContentRecord,
+    ContentSyncBatch,
     HealthRecord,
     SearchColumnSpec,
     SearchViewSpec,
@@ -241,7 +244,7 @@ class RsshubSource(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         channel = self.get_channel(channel_key)
         xml_body = self.http.get_text(channel.url)
         records = self._parse_feed(xml_body, channel.channel_key)
@@ -252,9 +255,37 @@ class RsshubSource(BaseSource):
                 for record in records
                 if record.published_at and record.published_at[:10] >= normalized_since
             ]
-        if fetch_all:
-            return records
-        return records[: (limit or 20)]
+        selected_records = records if fetch_all else records[: (limit or 20)]
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in selected_records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=channel.channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def _parse_feed(self, xml_body: str, channel_key: str) -> list[ContentRecord]:
         try:
@@ -494,8 +525,8 @@ MANIFEST = SourceManifest(
         table_name="rsshub_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -503,7 +534,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(

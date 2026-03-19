@@ -18,7 +18,10 @@ from core.manifest import (
 )
 from core.models import (
     ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
     ContentRecord,
+    ContentSyncBatch,
     HealthRecord,
     QueryColumnSpec,
     QueryViewSpec,
@@ -141,7 +144,7 @@ class UsStockSource(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         channel = self.get_channel(channel_key)
         display_name, bars = self._fetch_bars(
             channel_key=channel_key,
@@ -158,7 +161,37 @@ class UsStockSource(BaseSource):
             mkt_num=channel.metadata.get("mkt_num", ""),
             security_type_name=channel.metadata.get("security_type_name", "美股"),
         )
-        return [self._build_bar_record(resolved_channel, bar) for bar in bars]
+        records = [self._build_bar_record(resolved_channel, bar) for bar in bars]
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=resolved_channel.channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def _channel_record(
         self,
@@ -301,8 +334,8 @@ MANIFEST = SourceManifest(
         table_name="usstock_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -310,7 +343,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(

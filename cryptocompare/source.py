@@ -16,7 +16,10 @@ from core.manifest import (
 )
 from core.models import (
     ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
     ContentRecord,
+    ContentSyncBatch,
     HealthRecord,
     QueryColumnSpec,
     QueryViewSpec,
@@ -113,10 +116,40 @@ class CryptocompareSource(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         channel = self.get_channel(channel_key)
         candles = self._fetch_candles(channel.channel_key, since=since, limit=20 if limit is None else limit, fetch_all=fetch_all)
-        return [self._build_candle_record(channel, candle) for candle in candles]
+        records = [self._build_candle_record(channel, candle) for candle in candles]
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=channel.channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def _load_coin_map(self) -> dict[str, dict[str, str]]:
         if self._coin_cache is not None:
@@ -313,8 +346,8 @@ MANIFEST = SourceManifest(
         table_name="cryptocompare_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -322,7 +355,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(

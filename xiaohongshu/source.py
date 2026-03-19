@@ -20,7 +20,10 @@ from core.manifest import (
 )
 from core.models import (
     ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
     ContentRecord,
+    ContentSyncBatch,
     HealthRecord,
     InteractionResult,
     QueryColumnSpec,
@@ -173,14 +176,44 @@ class XiaohongshuSource(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         notes = self._fetch_user_note_payloads(
             channel_key,
             since=since,
             limit=20 if limit is None else limit,
             fetch_all=fetch_all,
         )
-        return [content_record_from_note(channel_key, note) for note in notes]
+        records = [content_record_from_note(channel_key, note) for note in notes]
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def parse_content_ref(self, ref: str) -> str:
         parsed = parse_core_content_ref(ref)
@@ -377,8 +410,8 @@ MANIFEST = SourceManifest(
         table_name="xiaohongshu_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -386,7 +419,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
             "content_ref",
         ),
     ),

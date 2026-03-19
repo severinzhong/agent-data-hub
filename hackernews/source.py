@@ -16,7 +16,16 @@ from core.manifest import (
     SourceManifest,
     StorageSpec,
 )
-from core.models import ChannelRecord, ContentRecord, HealthRecord, SearchResult, SourceStorageSpec
+from core.models import (
+    ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
+    ContentRecord,
+    ContentSyncBatch,
+    HealthRecord,
+    SearchResult,
+    SourceStorageSpec,
+)
 from core.source_defaults import proxy_url_config
 from utils.text import clean_text
 from utils.time import utc_now_iso
@@ -121,13 +130,16 @@ class HackerNewsSource(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         channel = self.get_channel(channel_key)
         normalized_since = None
         if since is not None:
             normalized_since = since.astimezone().date().isoformat()
         if fetch_all and since is not None:
-            return self._fetch_windowed_since(channel.channel_key, channel.url, since)
+            return self._content_batch(
+                channel.channel_key,
+                self._fetch_windowed_since(channel.channel_key, channel.url, since),
+            )
         if not fetch_all:
             request_url = channel.url
             if normalized_since is not None:
@@ -140,7 +152,7 @@ class HackerNewsSource(BaseSource):
                     for record in records
                     if record.published_at and record.published_at[:10] >= normalized_since
                 ]
-            return records[: (limit or 20)]
+            return self._content_batch(channel.channel_key, records[: (limit or 20)])
 
         records: list[ContentRecord] = []
         seen_dedup_keys: set[str] = set()
@@ -187,7 +199,7 @@ class HackerNewsSource(BaseSource):
                 break
             page += 1
 
-        return records
+        return self._content_batch(channel.channel_key, records)
 
     def _records_from_hits(self, channel_key: str, hits: list[dict]) -> list[ContentRecord]:
         records: list[ContentRecord] = []
@@ -211,6 +223,38 @@ class HackerNewsSource(BaseSource):
                 )
             )
         return records
+
+    def _content_batch(self, channel_key: str, records: list[ContentRecord]) -> ContentSyncBatch:
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def _fetch_windowed_since(
         self,
@@ -392,8 +436,8 @@ MANIFEST = SourceManifest(
         table_name="hackernews_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -401,7 +445,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(

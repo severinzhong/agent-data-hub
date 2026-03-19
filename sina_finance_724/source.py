@@ -20,7 +20,10 @@ from core.manifest import (
 )
 from core.models import (
     ChannelRecord,
+    ContentChannelLink,
+    ContentNode,
     ContentRecord,
+    ContentSyncBatch,
     HealthRecord,
     QueryColumnSpec,
     QueryViewSpec,
@@ -140,9 +143,9 @@ class SinaFinance724Source(BaseSource):
         since: datetime | None = None,
         limit: int | None = 20,
         fetch_all: bool = False,
-    ) -> list[ContentRecord]:
+    ) -> ContentSyncBatch:
         if limit == 0 and since is None and not fetch_all:
-            return []
+            return ContentSyncBatch(nodes=[], channel_links=[], relations=[])
 
         channel = self.get_channel(channel_key)
         since_date = self._normalize_since(since)
@@ -207,9 +210,37 @@ class SinaFinance724Source(BaseSource):
         if page_index >= max_pages:
             self._log_progress(channel_key, f"reached max_pages={max_pages}, stop pagination")
 
-        if since_date is None and not fetch_all and (limit or 0) >= 0:
-            return records[: (limit or 20)]
-        return records
+        selected_records = records[: (limit or 20)] if since_date is None and not fetch_all and (limit or 0) >= 0 else records
+        nodes = [
+            ContentNode(
+                source=record.source,
+                content_key=f"{record.record_type}:{record.external_id}",
+                content_type=record.record_type,
+                external_id=record.external_id,
+                title=record.title,
+                url=record.url,
+                snippet=record.snippet,
+                author=record.author,
+                published_at=record.published_at,
+                fetched_at=record.fetched_at,
+                raw_payload=record.raw_payload,
+                content_ref=record.content_ref,
+            )
+            for record in selected_records
+        ]
+        return ContentSyncBatch(
+            nodes=nodes,
+            channel_links=[
+                ContentChannelLink(
+                    source=self.name,
+                    channel_key=channel.channel_key,
+                    content_key=node.content_key,
+                    membership_kind="direct",
+                )
+                for node in nodes
+            ],
+            relations=[],
+        )
 
     def _request_feed(self, channel_key: str, params: dict[str, str]) -> dict:
         max_retries = self._config_int("request_max_retries", default=3, min_value=1)
@@ -353,8 +384,8 @@ MANIFEST = SourceManifest(
         table_name="sina_finance_724_records",
         required_record_fields=(
             "source",
-            "channel_key",
-            "record_type",
+            "content_key",
+            "content_type",
             "external_id",
             "title",
             "url",
@@ -362,7 +393,6 @@ MANIFEST = SourceManifest(
             "published_at",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(

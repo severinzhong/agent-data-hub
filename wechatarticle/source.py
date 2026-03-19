@@ -332,12 +332,12 @@ MANIFEST = SourceManifest(
         table_name="wechatarticle_records",
         required_record_fields=(
             "source",
-            "channel_key",
+            "content_key",
+            "content_type",
             "title",
             "url",
             "fetched_at",
             "raw_payload",
-            "dedup_key",
         ),
     ),
     docs=DocsSpec(
