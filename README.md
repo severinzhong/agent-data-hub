@@ -28,6 +28,7 @@ uv run -m adc content search --source data_hub --channel official --query xiaoho
 | Source | Channel Search | Content Search | Update | Query | Interact |
 | --- | --- | --- | --- | --- | --- |
 | `ashare` | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `avwiki` | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `bbc` | ❌ | ✅ | ✅ | ✅ | ❌ |
 | `cryptocompare` | ✅ | ❌ | ✅ | ✅ | ❌ |
 | `hackernews` | ❌ | ✅ | ✅ | ✅ | ❌ |
@@ -41,6 +42,7 @@ uv run -m adc content search --source data_hub --channel official --query xiaoho
 
 ```text
 ashare/
+avwiki/
 bbc/
 cryptocompare/
 hackernews/

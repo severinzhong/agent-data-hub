@@ -16,6 +16,20 @@
     ]
   },
   {
+    "source_name": "avwiki",
+    "display_name": "AV Wiki",
+    "summary": "Japanese AV metadata search via av-wiki.net WordPress REST API",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "avwiki",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": [
+      "content.search"
+    ]
+  },
+  {
     "source_name": "bbc",
     "display_name": "BBC",
     "summary": "BBC News RSS and site search",
