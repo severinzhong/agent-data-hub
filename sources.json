@@ -171,5 +171,21 @@
       "content.query",
       "content.interact"
     ]
+  },
+  {
+    "source_name": "yahoojp_news",
+    "display_name": "Yahoo!ニュース",
+    "summary": "Yahoo! News Japan RSS channels and feed sync",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "yahoojp_news",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": [
+      "channel.search",
+      "content.update",
+      "content.query"
+    ]
   }
 ]

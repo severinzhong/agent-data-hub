@@ -38,6 +38,7 @@ uv run -m adc content search --source data_hub --channel official --query xiaoho
 | `usstock` | ✅ | ❌ | ✅ | ✅ | ❌ |
 | `wechatarticle` | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `xiaohongshu` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `yahoojp_news` | ✅ | ❌ | ✅ | ✅ | ❌ |
 
 ## Repository Layout
 
@@ -53,6 +54,7 @@ sina_finance_724/
 usstock/
 wechatarticle/
 xiaohongshu/
+yahoojp_news/
 sources.json
 ```
 
