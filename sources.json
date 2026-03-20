@@ -1,5 +1,21 @@
 [
   {
+    "source_name": "ap",
+    "display_name": "AP News",
+    "summary": "AP News fixed channels and site search",
+    "repo_url": "https://github.com/severinzhong/agent-data-hub",
+    "repo_subdir": "ap",
+    "docs_url": "https://github.com/severinzhong/agent-data-hub",
+    "version": "official",
+    "install_strategy": "git_clone_subdir",
+    "init_script": "",
+    "capabilities": [
+      "content.search",
+      "content.update",
+      "content.query"
+    ]
+  },
+  {
     "source_name": "ashare",
     "display_name": "A-Share",
     "summary": "A-share market data via public suggest and quote endpoints",
@@ -18,7 +34,7 @@
   {
     "source_name": "avwiki",
     "display_name": "AV Wiki",
-    "summary": "Japanese AV metadata search via av-wiki.net WordPress REST API",
+    "summary": "AV-Wiki Japanese AV metadata search",
     "repo_url": "https://github.com/severinzhong/agent-data-hub",
     "repo_subdir": "avwiki",
     "docs_url": "https://github.com/severinzhong/agent-data-hub",
