@@ -34,10 +34,14 @@ class AvwikiSource(BaseSource):
 
     _API_ROOT = "https://av-wiki.net/wp-json/"
     _POSTS_API = "https://av-wiki.net/wp-json/wp/v2/posts"
+    _JSON_HEADERS = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
 
     def health(self) -> HealthRecord:
         started_at = time.perf_counter()
-        payload = self.http.get_json(self._API_ROOT)
+        payload = self.http.get_json(self._API_ROOT, headers=self._JSON_HEADERS)
         namespaces = payload.get("namespaces")
         routes = payload.get("routes")
         if not isinstance(namespaces, list) or "wp/v2" not in namespaces:
@@ -102,7 +106,7 @@ class AvwikiSource(BaseSource):
 
     def _fetch_search_page(self, query: str, *, page: int, page_size: int) -> list[SearchResult]:
         url = f"{self._POSTS_API}?search={quote_plus(query)}&per_page={page_size}&page={page}"
-        payload = self.http.get_json(url)
+        payload = self.http.get_json(url, headers=self._JSON_HEADERS)
         if not isinstance(payload, list):
             raise RuntimeError("avwiki posts response must be a list")
         results: list[SearchResult] = []
