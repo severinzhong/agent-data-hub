@@ -96,12 +96,11 @@ class YahooJpNewsSource(BaseSource):
         _ = channel_key
         return QueryViewSpec(
             columns=[
-                QueryColumnSpec("published_at", lambda item: item.published_at or "", no_wrap=True, max_width=20),
-                QueryColumnSpec("channel", lambda item: item.channel_key, no_wrap=True, max_width=24),
-                QueryColumnSpec("content_type", lambda item: item.content_type, no_wrap=True, max_width=14),
-                QueryColumnSpec("title", lambda item: item.title, max_width=28),
-                QueryColumnSpec("snippet", lambda item: item.snippet, max_width=32),
-                QueryColumnSpec("url", lambda item: item.url, no_wrap=True, max_width=56),
+                QueryColumnSpec("published_at", lambda item: item.published_at or "", no_wrap=True, max_width=16),
+                QueryColumnSpec("channel", lambda item: item.channel_key, no_wrap=True, max_width=18),
+                QueryColumnSpec("title", lambda item: item.title, max_width=24),
+                QueryColumnSpec("snippet", lambda item: item.snippet),
+                QueryColumnSpec("url", lambda item: item.url, no_wrap=True, max_width=20),
             ]
         )
 

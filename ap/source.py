@@ -25,7 +25,9 @@ from core.models import (
     HealthRecord,
     QueryColumnSpec,
     QueryViewSpec,
+    SearchColumnSpec,
     SearchResult,
+    SearchViewSpec,
 )
 from core.source_defaults import proxy_url_config
 from utils.text import clean_text
@@ -260,14 +262,25 @@ class ApSource(BaseSource):
             for card in self._parse_cards(html_body)[:limit]
         ]
 
+    def get_content_search_view(self, channel_key: str | None) -> SearchViewSpec | None:
+        _ = channel_key
+        return SearchViewSpec(
+            columns=[
+                SearchColumnSpec("title", lambda item: item.title, max_width=28),
+                SearchColumnSpec("snippet", lambda item: item.snippet),
+                SearchColumnSpec("url", lambda item: item.url, no_wrap=True, max_width=56),
+            ]
+        )
+
     def get_query_view(self, channel_key: str | None = None) -> QueryViewSpec | None:
         _ = channel_key
         return QueryViewSpec(
             columns=[
-                QueryColumnSpec("published_at", lambda item: item.published_at or "", no_wrap=True, max_width=20),
-                QueryColumnSpec("title", lambda item: item.title, max_width=20),
-                QueryColumnSpec("snippet", lambda item: item.snippet, max_width=24),
-                QueryColumnSpec("url", lambda item: item.url, max_width=28),
+                QueryColumnSpec("published_at", lambda item: item.published_at or "", no_wrap=True, max_width=16),
+                QueryColumnSpec("channel", lambda item: item.channel_key, no_wrap=True, max_width=12),
+                QueryColumnSpec("title", lambda item: item.title, max_width=24),
+                QueryColumnSpec("snippet", lambda item: item.snippet),
+                QueryColumnSpec("url", lambda item: item.url, no_wrap=True, max_width=20),
             ]
         )
 
