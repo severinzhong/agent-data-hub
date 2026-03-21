@@ -7,7 +7,7 @@
 它负责提供：
 
 - 我已经整理好的官方 source 实现
-- 仓库根的 `sources.json` 索引文件，供 `agent-data-cli` 内置的 `data_hub` source 读取
+- 仓库根的 `sources.json` 索引文件，供 `agent-data-cli` 的 `hub` 命令族读取
 
 `agent-data-cli` 负责协议、CLI、store、discovery 等 core；`agent-data-hub` 负责 source 本身。
 
@@ -16,12 +16,13 @@
 在 `agent-data-cli` 仓库里，把 `source_workspace` 指到这个仓库：
 
 ```bash
-uv run -m adc config cli set source_workspace /abs/path/to/agent-data-hub
-uv run -m adc source list
-uv run -m adc content search --source data_hub --channel official --query xiaohongshu
+adc config cli set source_workspace /abs/path/to/agent-data-hub
+adc source list
+adc config cli set hub_index /abs/path/to/agent-data-hub/sources.json
+adc hub search --query xiaohongshu
 ```
 
-`data_hub` 是 core 内置的轻量 source，它会从这里的 `sources.json` 读取官方 source 索引。
+`hub` 是 core 内置命令族，它会从这里的 `sources.json` 读取官方 source 索引。
 
 ## 当前整理好的 Source
 

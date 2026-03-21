@@ -7,7 +7,7 @@
 It provides:
 
 - curated official source implementations
-- the repository-root `sources.json` index consumed by the built-in `data_hub` source from `agent-data-cli`
+- the repository-root `sources.json` index consumed by the core `hub` commands from `agent-data-cli`
 
 `agent-data-cli` owns the core protocol, CLI, store, and discovery flow; `agent-data-hub` owns the source implementations and the curated source index.
 
@@ -16,12 +16,13 @@ It provides:
 In the `agent-data-cli` repository, point `source_workspace` at this repo:
 
 ```bash
-uv run -m adc config cli set source_workspace /abs/path/to/agent-data-hub
-uv run -m adc source list
-uv run -m adc content search --source data_hub --channel official --query xiaohongshu
+adc config cli set source_workspace /abs/path/to/agent-data-hub
+adc source list
+adc config cli set hub_index /abs/path/to/agent-data-hub/sources.json
+adc hub search --query xiaohongshu
 ```
 
-`data_hub` is the lightweight built-in source in core, and it reads the official source index from `sources.json` here.
+`hub` is the core command family in `agent-data-cli`, and it reads the official source index from `sources.json` here.
 
 ## Curated Sources
 
